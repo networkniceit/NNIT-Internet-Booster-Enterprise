@@ -1,4 +1,6 @@
 ﻿import { Module } from '@nestjs/common';
+import { FleetModule } from './fleet/fleet.module';
+import { CloudAgentModule } from './cloud-agent/cloud-agent.module';
 import { QosModule } from './qos/qos.module';
 import { TrafficModule } from './traffic/traffic.module';
 import { AlertsModule } from './alerts/alerts.module';
@@ -12,7 +14,7 @@ import { RelayClientModule } from './relay-client/relay-client.module';
 import { SteeringModule } from './steering/steering.module';
 
 @Module({
-  imports: [QosModule, TrafficModule, AlertsModule, FailoverModule, 
+  imports: [FleetModule, CloudAgentModule, QosModule, TrafficModule, AlertsModule, FailoverModule, 
     MeasurementModule,
     AnalyticsModule,
     OptimizerModule,
@@ -25,6 +27,8 @@ import { SteeringModule } from './steering/steering.module';
   ],
 })
 export class AppModule {}
+
+
 
 
 
