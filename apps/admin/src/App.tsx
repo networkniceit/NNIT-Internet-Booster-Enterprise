@@ -6,6 +6,7 @@ import {
   type NetworkStatus,
 } from './api';
 import './App.css';
+import { ResourceOptimizerPanel } from './ResourceOptimizerPanel';
 import { FleetAlertsPanel } from './FleetAlertsPanel';
 import { ResourcePressurePanel } from './ResourcePressurePanel';
 import { RemoteActionsPanel } from './RemoteActionsPanel';
@@ -335,7 +336,7 @@ function App() {
         <SteeringPanel />        <AnalyticsPanel />        <MultiMetricPanel />        <FailoverPanel />        <AlertsPanel />        <TrafficPanel />        <QosPanel />        <QosProfilesPanel />        <CloudAgentPanel />
         <FleetPanel />        <RemoteDiagnosticsPanel />
 
-        <ResourcePressurePanel />        <RemoteActionsPanel />        <FleetAlertsPanel />`r`n`r`n        <section className="card system-card">
+        <ResourcePressurePanel />        <RemoteActionsPanel />        <FleetAlertsPanel />        <ResourceOptimizerPanel />`r`n`r`n        <section className="card system-card">
           <div>
             <p className="section-label">SYSTEM</p>
             <h2>{status?.computer.hostname ?? 'Unknown computer'}</h2>
@@ -370,6 +371,8 @@ function App() {
 }
 
 export default App;
+
+
 
 
 

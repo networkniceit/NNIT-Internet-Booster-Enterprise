@@ -1,0 +1,10 @@
+﻿import{useEffect,useState}from'react';
+const API=import.meta.env.VITE_API_URL??'http://localhost:4000';
+export function ResourceOptimizerPanel(){
+ const[d,setD]=useState<any>(null),[msg,setMsg]=useState(''),[busy,setBusy]=useState('');
+ async function load(){try{const r=await fetch(`${API}/api/resource-optimizer/analyze`,{cache:'no-store'});if(!r.ok)throw new Error(await r.text());setD(await r.json())}catch(e){setMsg(String(e))}}
+ async function close(name:string){if(!window.confirm(`Close all running ${name} processes? Unsaved work can be lost.`))return;try{setBusy(name);const r=await fetch(`${API}/api/resource-optimizer/close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({processName:name})});const x=await r.json();setMsg(x.success?`${name}: ${x.result?.message??'completed'}`:`${name}: ${x.message??'failed'}`);await load()}catch(e){setMsg(String(e))}finally{setBusy('')}}
+ useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t)},[]);
+ const items=d?.optimizationCandidates??[];
+ return <section className="card resource-optimizer-card"><div className="card-header"><div><p className="section-label">RESOURCE OPTIMIZER</p><h2>Developer workload analysis</h2></div><span className="optimizer-live-badge online">SAFE MODE</span></div><div className="resource-summary"><div><span>Recovery potential</span><strong>{d?.estimatedRecoverableRamGb??'--'} GB</strong></div><div><span>Assessment</span><strong>{d?.recommendation??'--'}</strong></div></div><div className="resource-candidates">{items.map((x:any)=><article className="resource-candidate" key={x.processName}><div><strong>{x.processName}</strong><span>{x.processCount} processes - {x.ramMb} MB RAM</span></div><button className="secondary-button" disabled={busy===x.processName} onClick={()=>close(x.processName)}>{busy===x.processName?'Closing...':'Close'}</button></article>)}</div><p className="traffic-note">NNIT never closes Windows core processes. Every close action requires confirmation and uses a fixed whitelist.</p><p className="action-message">{msg}</p></section>
+}

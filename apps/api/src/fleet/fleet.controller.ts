@@ -46,12 +46,18 @@ export class FleetController {
     @Body()
     body: {
       id: string;
+      incidentKey?: string;
     },
   ): Promise<unknown> {
     return this.f.acknowledgeAlert(
       String(
         body.id ?? '',
       ),
+      body.incidentKey
+        ? String(
+            body.incidentKey,
+          )
+        : undefined,
     );
   }
 
@@ -60,12 +66,18 @@ export class FleetController {
     @Body()
     body: {
       id: string;
+      incidentKey?: string;
     },
   ): Promise<unknown> {
     return this.f.resolveAlert(
       String(
         body.id ?? '',
       ),
+      body.incidentKey
+        ? String(
+            body.incidentKey,
+          )
+        : undefined,
     );
   }
 
