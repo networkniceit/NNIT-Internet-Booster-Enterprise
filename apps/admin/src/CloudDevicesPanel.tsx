@@ -93,7 +93,7 @@ export function CloudDevicesPanel(){
       <div className="cloud-device-title">
        <div>
         <strong>{device.name}</strong>
-        <span>{device.platform} Â· agent {device.agentVersion}</span>
+        <span>{device.platform} · agent {device.agentVersion}</span>
        </div>
        <span className={`cloud-device-state ${device.online?'online':'offline'}`}>
         {device.online?'ONLINE':'OFFLINE'}
@@ -135,3 +135,5 @@ export function CloudDevicesPanel(){
   </p>
  </section>
 }
+
+

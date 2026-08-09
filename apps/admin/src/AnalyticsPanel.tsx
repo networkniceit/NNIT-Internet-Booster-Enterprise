@@ -14,3 +14,5 @@ export function AnalyticsPanel(){
  <div className="analytics-charts"><article><div className="chart-title"><span>Network score</span><strong>0-100</strong></div><svg viewBox="0 0 600 180"><path className="chart-grid-line" d="M0 45 H600 M0 90 H600 M0 135 H600"/><path className="chart-score-line" d={score}/></svg></article><article><div className="chart-title"><span>Latency</span><strong>ms</strong></div><svg viewBox="0 0 600 180"><path className="chart-grid-line" d="M0 45 H600 M0 90 H600 M0 135 H600"/><path className="chart-latency-line" d={latency}/></svg></article></div>
  <div className="analytics-actions"><button className="primary-button" onClick={()=>window.open(`${API}/api/analytics/export`,'_blank')}>Download diagnostics</button><button className="secondary-button" onClick={clear}>Clear history</button></div><p className="action-message">{m}</p></section>
 }
+
+

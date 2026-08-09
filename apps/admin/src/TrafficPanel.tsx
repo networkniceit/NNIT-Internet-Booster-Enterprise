@@ -11,3 +11,5 @@ export function TrafficPanel(){
  <div className="traffic-table-wrap"><table className="traffic-table"><thead><tr><th>Application</th><th>PID</th><th>Connections</th><th>Established</th><th>Listening</th><th>Remote endpoints</th></tr></thead><tbody>{rows.map((x:any)=><tr key={x.pid}><td><strong>{x.name}</strong><span>{x.path??'Path unavailable'}</span></td><td>{x.pid}</td><td>{x.connectionCount}</td><td>{x.establishedCount}</td><td>{x.listeningCount}</td><td>{(x.remoteEndpoints??[]).slice(0,3).join(', ')||'--'}</td></tr>)}</tbody></table></div>
  <p className="traffic-note">Throughput is measured for the active interface. Process rows show verified connection activity; Windows standard APIs do not provide exact per-process Mbps.</p></section>
 }
+
+

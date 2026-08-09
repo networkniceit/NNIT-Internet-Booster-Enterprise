@@ -1,10 +1,12 @@
-﻿import express from 'express';
+﻿import { installAlertLifecycleRoutes } from './alert-lifecycle';
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import crypto from 'node:crypto';
 
 const app = express();
+installAlertLifecycleRoutes(app);
 app.use(helmet());
 app.use(cors({origin:true}));
 app.use(express.json({limit:'1mb'}));
@@ -121,3 +123,4 @@ app.post('/api/commands/:id/result',(req,res)=>{
 
 const port=Number(process.env.PORT??8080);
 app.listen(port,'0.0.0.0',()=>console.log(`NNIT Cloud API listening on ${port}`));
+

@@ -1,25 +1,55 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿import {
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import os from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import {
-  DiagnosticResult,
-  SystemTelemetry,
-} from './remote-diagnostics.types';
 
 const execFileAsync = promisify(execFile);
 
 @Injectable()
-export class RemoteDiagnosticsService {
-  private previousCpu:
-    | { idle: number; total: number }
-    | null = null;
+export class RemoteDiagnosticsService
+  implements OnModuleInit, OnModuleDestroy
+{
+  private timer: NodeJS.Timeout | null = null;
 
-  async telemetry(): Promise<SystemTelemetry> {
-    const cpuPercent = this.readCpuPercent();
+  private cachedWindows: any = {
+    activeAdapter: null,
+    defaultGateway: null,
+    diskFreeBytes: null,
+    diskTotalBytes: null,
+    cpuPercent: null,
+    sampledAt: null,
+  };
 
+  private refreshInFlight = false;
+
+  onModuleInit() {
+    void this.refreshWindowsSnapshot();
+
+    this.timer = setInterval(
+      () => {
+        void this.refreshWindowsSnapshot();
+      },
+      15000,
+    );
+
+    this.timer.unref();
+  }
+
+  onModuleDestroy() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  async telemetry() {
     const totalMemoryBytes = os.totalmem();
     const freeMemoryBytes = os.freemem();
+
     const memoryUsedPercent =
       totalMemoryBytes > 0
         ? Number(
@@ -31,75 +61,84 @@ export class RemoteDiagnosticsService {
           )
         : null;
 
-    const drive = await this.readSystemDrive();
-
     return {
       hostname: os.hostname(),
       platform: os.platform(),
       release: os.release(),
       arch: os.arch(),
       uptimeSeconds: Math.round(os.uptime()),
-      cpuPercent,
+      cpuPercent: this.cachedWindows.cpuPercent,
       memoryUsedPercent,
       totalMemoryBytes,
       freeMemoryBytes,
-      systemDriveFreeBytes: drive?.free ?? null,
-      systemDriveTotalBytes: drive?.total ?? null,
+      systemDriveFreeBytes:
+        this.cachedWindows.diskFreeBytes,
+      systemDriveTotalBytes:
+        this.cachedWindows.diskTotalBytes,
+      sampledAt:
+        this.cachedWindows.sampledAt,
       timestamp: new Date().toISOString(),
     };
   }
 
-  async runDiagnostics(): Promise<DiagnosticResult> {
+  async runDiagnostics() {
+    // Explicit diagnostic runs are allowed to wait for one fresh sample.
+    await this.refreshWindowsSnapshot(true);
+
     const notes: string[] = [];
 
     const activeAdapter =
-      await this.runPowerShell(
-        "$a=Get-NetAdapter|Where-Object{$_.Status -eq 'Up' -and $_.Name -notmatch 'vEthernet|WSL|Hyper-V|Loopback|Virtual'}|Select-Object -First 1 -ExpandProperty Name; if($a){$a}",
-      );
+      this.cachedWindows.activeAdapter ?? null;
 
     const defaultGateway =
-      await this.runPowerShell(
-        "$g=(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue|Sort-Object RouteMetric|Select-Object -First 1).NextHop; if($g){$g}",
-      );
+      this.cachedWindows.defaultGateway ?? null;
 
     let dnsResolved = false;
+
     try {
-      const { stdout } = await execFileAsync(
-        'powershell.exe',
-        [
-          '-NoProfile',
-          '-ExecutionPolicy',
-          'Bypass',
-          '-Command',
-          "Resolve-DnsName one.one.one.one -ErrorAction Stop | Out-Null; 'OK'",
-        ],
-        { timeout: 10000, windowsHide: true },
-      );
-      dnsResolved = stdout.includes('OK');
+      const dns = await import('node:dns');
+
+      const result = await Promise.race([
+        dns.promises.resolve4('one.one.one.one'),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('DNS timeout')),
+            5000,
+          ),
+        ),
+      ]);
+
+      dnsResolved =
+        Array.isArray(result) &&
+        result.length > 0;
     } catch {
       notes.push('DNS resolution test failed.');
     }
 
     let internetReachable = false;
+
     try {
       const response = await fetch(
-        'https://1.1.1.1',
+        'https://www.msftconnecttest.com/connecttest.txt',
         {
-          method: 'HEAD',
-          signal: AbortSignal.timeout(10000),
+          method: 'GET',
+          signal: AbortSignal.timeout(5000),
         },
       );
-      internetReachable = response.ok || response.status > 0;
+
+      internetReachable =
+        response.ok ||
+        response.status > 0;
     } catch {
       notes.push('Internet reachability test failed.');
     }
 
     if (!activeAdapter) {
-      notes.push('No physical active adapter detected.');
+      notes.push('Active physical adapter could not be resolved.');
     }
 
     if (!defaultGateway) {
-      notes.push('No IPv4 default gateway detected.');
+      notes.push('IPv4 default gateway could not be resolved.');
     }
 
     return {
@@ -110,10 +149,8 @@ export class RemoteDiagnosticsService {
         internetReachable,
       dnsResolved,
       internetReachable,
-      defaultGateway:
-        defaultGateway || null,
-      activeAdapter:
-        activeAdapter || null,
+      defaultGateway,
+      activeAdapter,
       cloudReachable: null,
       notes,
       timestamp: new Date().toISOString(),
@@ -121,97 +158,86 @@ export class RemoteDiagnosticsService {
   }
 
   async collectSummary() {
-    const telemetry = await this.telemetry();
-    const diagnostics = await this.runDiagnostics();
-
     return {
-      telemetry,
-      diagnostics,
+      telemetry: await this.telemetry(),
+      diagnostics: await this.runDiagnostics(),
       generatedAt: new Date().toISOString(),
     };
   }
 
-  private readCpuPercent() {
-    const cpus = os.cpus();
-
-    let idle = 0;
-    let total = 0;
-
-    for (const cpu of cpus) {
-      idle += cpu.times.idle;
-      total +=
-        cpu.times.user +
-        cpu.times.nice +
-        cpu.times.sys +
-        cpu.times.idle +
-        cpu.times.irq;
+  private async refreshWindowsSnapshot(force = false) {
+    if (this.refreshInFlight && !force) {
+      return;
     }
 
-    if (!this.previousCpu) {
-      this.previousCpu = { idle, total };
-      return null;
+    this.refreshInFlight = true;
+
+    const script = `
+$ErrorActionPreference='SilentlyContinue'
+
+$adapter = Get-CimInstance Win32_NetworkAdapterConfiguration |
+  Where-Object {
+    $_.IPEnabled -eq $true -and
+    $_.Description -notmatch 'Hyper-V|Virtual|Loopback|WSL|vEthernet'
+  } |
+  Sort-Object @{
+    Expression = {
+      if($_.Description -match 'Wi-Fi|Wireless|WLAN'){0}else{1}
     }
+  } |
+  Select-Object -First 1
 
-    const idleDelta =
-      idle - this.previousCpu.idle;
+$gateway = $null
+if($adapter -and $adapter.DefaultIPGateway){
+  $gateway = @($adapter.DefaultIPGateway)[0]
+}
 
-    const totalDelta =
-      total - this.previousCpu.total;
+$disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'" |
+  Select-Object -First 1
 
-    this.previousCpu = { idle, total };
+$cpu = Get-CimInstance Win32_Processor |
+  Measure-Object -Property LoadPercentage -Average
 
-    if (totalDelta <= 0) {
-      return null;
-    }
+[pscustomobject]@{
+  activeAdapter = if($adapter){[string]$adapter.Description}else{$null}
+  defaultGateway = if($gateway){[string]$gateway}else{$null}
+  diskFreeBytes = if($disk){[double]$disk.FreeSpace}else{$null}
+  diskTotalBytes = if($disk){[double]$disk.Size}else{$null}
+  cpuPercent = if($cpu.Count -gt 0){[double]$cpu.Average}else{$null}
+  sampledAt = [DateTimeOffset]::UtcNow.ToString('o')
+} | ConvertTo-Json -Compress
+`;
 
-    return Number(
-      (
-        (1 - idleDelta / totalDelta) *
-        100
-      ).toFixed(1),
-    );
-  }
-
-  private async readSystemDrive() {
-    const result =
-      await this.runPowerShell(
-        "$d=Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\" -ErrorAction SilentlyContinue; if($d){[pscustomobject]@{free=[double]$d.FreeSpace;total=[double]$d.Size}|ConvertTo-Json -Compress}",
+    try {
+      const { stdout } = await execFileAsync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          script,
+        ],
+        {
+          timeout: 8000,
+          windowsHide: true,
+        },
       );
 
-    if (!result) {
-      return null;
-    }
+      const text = stdout.trim();
 
-    try {
-      return JSON.parse(result);
+      if (text) {
+        const parsed = JSON.parse(text);
+
+        this.cachedWindows = {
+          ...this.cachedWindows,
+          ...parsed,
+        };
+      }
     } catch {
-      return null;
-    }
-  }
-
-  private async runPowerShell(
-    command: string,
-  ): Promise<string> {
-    try {
-      const { stdout } =
-        await execFileAsync(
-          'powershell.exe',
-          [
-            '-NoProfile',
-            '-ExecutionPolicy',
-            'Bypass',
-            '-Command',
-            command,
-          ],
-          {
-            timeout: 10000,
-            windowsHide: true,
-          },
-        );
-
-      return stdout.trim();
-    } catch {
-      return '';
+      // Keep the last good snapshot rather than blocking/failing the API.
+    } finally {
+      this.refreshInFlight = false;
     }
   }
 }

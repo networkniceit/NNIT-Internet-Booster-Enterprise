@@ -108,7 +108,7 @@ export function RemoteDiagnosticsPanel(){
 
     const timer=setInterval(
       ()=>void loadTelemetry(),
-      5000,
+      15000,
     );
 
     return()=>clearInterval(timer);
@@ -262,3 +262,6 @@ export function RemoteDiagnosticsPanel(){
     </section>
   );
 }
+
+
+

@@ -11,3 +11,5 @@ export function QosProfilesPanel(){
  <div className="qos-profile-toolbar"><select value={selected} onChange={e=>setSelected(e.target.value)}>{profiles.map(p=><option key={p.name} value={p.name}>{p.label}</option>)}</select><button className="secondary-button" onClick={show}>Preview</button><button className="primary-button" onClick={apply}>Apply profile</button></div>
  <div className="qos-profile-preview">{(preview?.detectedApplications??[]).map((x:any)=><div className="qos-profile-row" key={x.applicationPath}><div><strong>{x.processName}</strong><span>{x.applicationPath}</span></div><span>{x.priority}</span><span>{x.throttleMbps===null?'No limit':`${x.throttleMbps} Mbps`}</span></div>)}{!preview?.count&&<p className="empty-state">No matching detected applications.</p>}</div><p className="action-message">{msg}</p></section>
 }
+
+

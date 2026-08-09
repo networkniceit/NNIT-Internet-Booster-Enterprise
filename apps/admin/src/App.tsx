@@ -6,9 +6,11 @@ import {
   type NetworkStatus,
 } from './api';
 import './App.css';
+import { FleetAlertsPanel } from './FleetAlertsPanel';
+import { ResourcePressurePanel } from './ResourcePressurePanel';
+import { RemoteActionsPanel } from './RemoteActionsPanel';
 import { RemoteDiagnosticsPanel } from './RemoteDiagnosticsPanel';
 import { FleetPanel } from './FleetPanel';
-import { CloudDevicesPanel } from './CloudDevicesPanel';
 import { CloudAgentPanel } from './CloudAgentPanel';
 import { QosProfilesPanel } from './QosProfilesPanel';
 import { QosPanel } from './QosPanel';
@@ -330,9 +332,10 @@ function App() {
 
         <BondingPanel />        <RelayPanel />
 
-        <SteeringPanel />        <AnalyticsPanel />        <MultiMetricPanel />        <FailoverPanel />        <AlertsPanel />        <TrafficPanel />        <QosPanel />        <QosProfilesPanel />        <CloudAgentPanel />`r`n`r`n        <CloudDevicesPanel />`r`n`r`n        <FleetPanel />`r`n`r`n        <RemoteDiagnosticsPanel />
+        <SteeringPanel />        <AnalyticsPanel />        <MultiMetricPanel />        <FailoverPanel />        <AlertsPanel />        <TrafficPanel />        <QosPanel />        <QosProfilesPanel />        <CloudAgentPanel />
+        <FleetPanel />        <RemoteDiagnosticsPanel />
 
-        <section className="card system-card">
+        <ResourcePressurePanel />        <RemoteActionsPanel />        <FleetAlertsPanel />`r`n`r`n        <section className="card system-card">
           <div>
             <p className="section-label">SYSTEM</p>
             <h2>{status?.computer.hostname ?? 'Unknown computer'}</h2>
@@ -367,6 +370,11 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
 
 
 
