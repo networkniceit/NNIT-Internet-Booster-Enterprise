@@ -616,3 +616,52 @@ select {
 .cloud-agent-card{margin-top:14px}.cloud-agent-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}.cloud-agent-summary>div{background:#09182a;border-radius:12px;padding:14px;display:grid;gap:6px}.cloud-agent-summary span{color:#8298b1;font-size:12px}.cloud-agent-form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.cloud-agent-form label{display:grid;gap:7px;color:#91a6bf;font-size:13px}.cloud-agent-form input{border-radius:10px;border:1px solid #2a4667;background:#0c1c31;color:#eaf3ff;padding:10px 12px}.cloud-agent-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.cloud-agent-actions button{width:auto}@media(max-width:900px){.cloud-agent-summary{grid-template-columns:repeat(2,1fr)}.cloud-agent-form{grid-template-columns:1fr 1fr}}@media(max-width:560px){.cloud-agent-summary,.cloud-agent-form{grid-template-columns:1fr}}
 .cloud-devices-card{margin-top:14px}.cloud-dashboard-auth{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-top:18px}.cloud-dashboard-auth label{display:grid;gap:7px;color:#91a6bf;font-size:13px}.cloud-dashboard-auth input{border-radius:10px;border:1px solid #2a4667;background:#0c1c31;color:#eaf3ff;padding:10px 12px}.cloud-device-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}.cloud-device-card{background:#09182a;border-radius:14px;padding:16px;display:grid;gap:14px}.cloud-device-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cloud-device-title>div{display:grid;gap:4px}.cloud-device-title span{color:#8298b1;font-size:12px}.cloud-device-state{padding:6px 10px;border-radius:999px;font-size:11px!important}.cloud-device-state.online{background:rgba(83,223,178,.14);color:#53dfb2}.cloud-device-state.offline{background:rgba(255,112,112,.14);color:#ff8a8a}.cloud-device-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cloud-device-stats>div{display:grid;gap:4px;background:#0c1c31;border-radius:10px;padding:10px}.cloud-device-stats span,.cloud-device-meta span{color:#8298b1;font-size:12px}.cloud-device-meta{display:grid;gap:5px}.cloud-device-actions{display:flex;gap:8px;flex-wrap:wrap}.cloud-device-actions button{width:auto}@media(max-width:900px){.cloud-device-grid{grid-template-columns:1fr}}@media(max-width:600px){.cloud-dashboard-auth{grid-template-columns:1fr}.cloud-device-stats{grid-template-columns:repeat(2,1fr)}}
 .fleet-card{margin-top:14px}.fleet-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:18px}.fleet-summary>div,.fleet-stats>div{background:#09182a;border-radius:12px;padding:12px;display:grid;gap:5px}.fleet-summary span,.fleet-stats span,.fleet-device-meta span,.fleet-device-header span{color:#8298b1;font-size:12px}.fleet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.fleet-device{background:#081729;border-radius:14px;padding:16px;display:grid;gap:14px}.fleet-device-header{display:flex;justify-content:space-between;gap:12px}.fleet-device-header>div{display:grid;gap:4px}.fleet-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.fleet-device-meta{display:grid;gap:5px}.fleet-actions{display:flex;gap:8px;flex-wrap:wrap}.fleet-actions button{width:auto}@media(max-width:1000px){.fleet-summary{grid-template-columns:repeat(3,1fr)}.fleet-grid{grid-template-columns:1fr}}@media(max-width:600px){.fleet-summary,.fleet-stats{grid-template-columns:repeat(2,1fr)}}
+
+.remote-diag-card{
+  margin-top:14px;
+}
+
+.remote-diag-stats,
+.remote-diag-results{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+  margin-top:18px;
+}
+
+.remote-diag-stats>div,
+.remote-diag-results>div{
+  background:#09182a;
+  border-radius:12px;
+  padding:12px;
+  display:grid;
+  gap:5px;
+}
+
+.remote-diag-stats span,
+.remote-diag-results span,
+.remote-diag-notes span{
+  color:#8298b1;
+  font-size:12px;
+}
+
+.remote-diag-actions{
+  margin-top:14px;
+}
+
+.remote-diag-actions button{
+  width:auto;
+}
+
+.remote-diag-notes{
+  display:grid;
+  gap:6px;
+  margin-top:12px;
+}
+
+@media(max-width:900px){
+  .remote-diag-stats,
+  .remote-diag-results{
+    grid-template-columns:repeat(2,1fr);
+  }
+}

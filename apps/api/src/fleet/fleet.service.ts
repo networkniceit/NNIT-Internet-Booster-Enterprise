@@ -24,7 +24,8 @@ export class FleetService{
  analytics(limit=500){return this.req(`/api/analytics?limit=${Math.max(1,Math.min(2000,Number(limit)))}`)}
  alerts(){return this.req('/api/alerts')}
  command(deviceId:string,type:string){
-  if(!['ping-agent','send-telemetry'].includes(type))throw new Error(`Unsupported command: ${type}`);
+  if(!['ping-agent','send-telemetry','run-diagnostics'].includes(type))throw new Error(`Unsupported command: ${type}`);
   return this.req('/api/commands',{method:'POST',body:JSON.stringify({deviceId,type,payload:{}})});
  }
 }
+

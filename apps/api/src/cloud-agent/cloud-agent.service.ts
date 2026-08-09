@@ -54,6 +54,7 @@ export class CloudAgentService implements OnModuleInit,OnModuleDestroy{
    let result:any={success:false,error:`Unsupported command: ${c.type}`};
    if(c.type==='ping-agent')result={success:true,result:{hostname:os.hostname(),timestamp:new Date().toISOString()}};
    if(c.type==='send-telemetry'){await this.telemetry();result={success:true,result:{message:'Telemetry sent.'}}}
+   if(c.type==='run-diagnostics'){result={success:true,result:{message:'Diagnostics requested locally. Use /api/remote-diagnostics/summary for the latest result.'}}}
    await this.req(`/api/commands/${c.id}/result`,{method:'POST',body:JSON.stringify(result)});
   }
   this.status.lastCommandPollAt=new Date().toISOString();return this.getStatus()
@@ -69,4 +70,5 @@ export class CloudAgentService implements OnModuleInit,OnModuleDestroy{
  private load(){try{if(existsSync(this.file))this.settings={...this.settings,...JSON.parse(readFileSync(this.file,'utf8'))}}catch{}}
  private save(){mkdirSync(dirname(this.file),{recursive:true});writeFileSync(this.file,JSON.stringify(this.settings,null,2),'utf8')}
 }
+
 
