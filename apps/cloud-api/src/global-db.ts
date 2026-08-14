@@ -68,6 +68,23 @@ export async function initGlobalSchema() {
     CREATE INDEX IF NOT EXISTS idx_nnit_telemetry_device_time
       ON nnit_telemetry(device_id, created_at DESC);
 
+    CREATE TABLE IF NOT EXISTS nnit_commands(
+      id UUID PRIMARY KEY,
+      organization_id UUID NOT NULL REFERENCES nnit_organizations(id) ON DELETE CASCADE,
+      device_id UUID NOT NULL REFERENCES nnit_devices(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+      status TEXT NOT NULL DEFAULT 'queued',
+      queued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      delivered_at TIMESTAMPTZ,
+      completed_at TIMESTAMPTZ,
+      result JSONB,
+      error TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_nnit_commands_device_status
+      ON nnit_commands(device_id,status,queued_at);
+
     CREATE TABLE IF NOT EXISTS nnit_incidents(
       id UUID PRIMARY KEY,
       organization_id UUID NOT NULL REFERENCES nnit_organizations(id) ON DELETE CASCADE,
@@ -88,3 +105,4 @@ export async function initGlobalSchema() {
 
   return true;
 }
+

@@ -260,4 +260,100 @@ export function installGlobalPersistenceRoutes(app:Express){
       res.status(500).json({message:e instanceof Error?e.message:String(e)});
     }
   });
+  app.post('/api/v3/commands',async(req,res)=>{
+    try{
+      await initGlobalSchema();
+      const db=getPool()!;
+      const deviceId=String(req.body?.deviceId??'');
+      const type=String(req.body?.type??'');
+      const allowed=['ping-agent','send-telemetry','run-diagnostics','flush-dns','renew-ip'];
+
+      if(!deviceId)return res.status(400).json({message:'deviceId required'});
+      if(!allowed.includes(type))return res.status(400).json({message:`Unsupported command: ${type}`});
+
+      const device=await db.query(
+        `SELECT organization_id FROM nnit_devices WHERE id=$1`,
+        [deviceId],
+      );
+
+      if(!device.rowCount)return res.status(404).json({message:'Device not registered'});
+
+      const id=crypto.randomUUID();
+
+      const result=await db.query(
+        `INSERT INTO nnit_commands(id,organization_id,device_id,type,payload,status)
+         VALUES($1,$2,$3,$4,$5::jsonb,'queued')
+         RETURNING id,device_id AS "deviceId",type,payload,status,queued_at AS "queuedAt"`,
+        [
+          id,
+          device.rows[0].organization_id,
+          deviceId,
+          type,
+          JSON.stringify(req.body?.payload??{}),
+        ],
+      );
+
+      res.status(201).json({command:result.rows[0]});
+    }catch(e){
+      res.status(500).json({message:e instanceof Error?e.message:String(e)});
+    }
+  });
+
+  app.get('/api/v3/devices/:id/commands',async(req,res)=>{
+    try{
+      await initGlobalSchema();
+      const db=getPool()!;
+      const deviceId=String(req.params.id);
+
+      const result=await db.query(
+        `SELECT id,device_id AS "deviceId",type,payload,status,queued_at AS "queuedAt"
+         FROM nnit_commands
+         WHERE device_id=$1 AND status='queued'
+         ORDER BY queued_at ASC
+         LIMIT 20`,
+        [deviceId],
+      );
+
+      if(result.rows.length){
+        await db.query(
+          `UPDATE nnit_commands
+           SET status='delivered',delivered_at=NOW()
+           WHERE id = ANY($1::uuid[])`,
+          [result.rows.map((x:any)=>x.id)],
+        );
+      }
+
+      res.json({commands:result.rows});
+    }catch(e){
+      res.status(500).json({message:e instanceof Error?e.message:String(e)});
+    }
+  });
+
+  app.post('/api/v3/commands/:id/result',async(req,res)=>{
+    try{
+      await initGlobalSchema();
+      const db=getPool()!;
+      const ok=Boolean(req.body?.success);
+      const result=await db.query(
+        `UPDATE nnit_commands
+         SET status=$2,
+             completed_at=NOW(),
+             result=$3::jsonb,
+             error=$4
+         WHERE id=$1
+         RETURNING id,status,completed_at AS "completedAt"`,
+        [
+          String(req.params.id),
+          ok?'completed':'failed',
+          JSON.stringify(req.body?.result??{}),
+          ok?null:String(req.body?.error??'Command failed'),
+        ],
+      );
+
+      if(!result.rowCount)return res.status(404).json({message:'Command not found'});
+      res.json({command:result.rows[0]});
+    }catch(e){
+      res.status(500).json({message:e instanceof Error?e.message:String(e)});
+    }
+  });
 }
