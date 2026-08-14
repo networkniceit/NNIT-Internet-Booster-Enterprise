@@ -528,17 +528,4 @@ export class FleetService {
       },
     );
   }
-  commandsHistory(deviceId?:string){
-    const suffix=deviceId?`?deviceId=${encodeURIComponent(deviceId)}`:'';
-    return this.req(`/api/v3/commands/history${suffix}`);
-  }
-
-  queueCommand(deviceId:string,type:string){
-    const allowed=['ping-agent','send-telemetry','run-diagnostics','flush-dns','renew-ip'];
-    if(!allowed.includes(type))throw new Error(`Unsupported command: ${type}`);
-    return this.req('/api/v3/commands',{
-      method:'POST',
-      body:JSON.stringify({deviceId,type,payload:{}}),
-    });
-  }
 }

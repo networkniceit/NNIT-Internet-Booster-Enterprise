@@ -584,112 +584,67 @@ export class CloudAgentService implements OnModuleInit, OnModuleDestroy {
       return this.fail(error);
     }
   }
-  async poll() {
-    const settings=this.readSettings();
 
-    if(!settings.enabled||!settings.deviceId){
-      return {commands:[],skipped:true};
+  async poll() {
+    const settings = this.readSettings();
+
+    if (!settings.enabled || !settings.deviceId) {
+      return {
+        commands: [],
+        skipped: true,
+      };
     }
 
-    try{
-      if(settings.useV3!==false){
-        const result=await this.request(
+    try {
+      if (settings.useV3 !== false) {
+        const result = await this.request(
           settings,
           `/api/v3/devices/${encodeURIComponent(settings.deviceId)}/commands`,
         );
 
-        const commands=Array.isArray(result?.commands)?result.commands:[];
-        const executed:any[]=[];
+        this.state.lastCommandPollAt = new Date().toISOString();
+        this.state.cloudReachable = true;
+        this.state.lastError = null;
+        this.state.protocol = 'v3';
 
-        for(const command of commands){
-          const outcome=await this.executeApprovedCommand(command);
-          await this.reportCommandResult(settings,String(command?.id??''),outcome);
-          executed.push({
-            id:command?.id,
-            type:command?.type,
-            success:Boolean(outcome?.success),
-            error:outcome?.error??null,
-          });
-        }
-
-        this.state.lastCommandPollAt=new Date().toISOString();
-        this.state.cloudReachable=true;
-        this.state.lastError=null;
-        this.state.protocol='v3';
-
-        return {commands,executed,protocol:'v3'};
+        return {
+          ...result,
+          protocol: 'v3',
+        };
       }
 
-      const result=await this.request(
+      const result = await this.request(
         settings,
         `/api/commands?deviceId=${encodeURIComponent(settings.deviceId)}`,
       );
 
-      this.state.lastCommandPollAt=new Date().toISOString();
-      this.state.cloudReachable=true;
-      this.state.lastError=null;
-      this.state.protocol='v2';
+      this.state.lastCommandPollAt = new Date().toISOString();
+      this.state.cloudReachable = true;
+      this.state.lastError = null;
+      this.state.protocol = 'v2';
 
-      return {...result,protocol:'v2'};
-    }catch(error){
-      const message=error instanceof Error?error.message:String(error);
-      this.state.lastError=message;
-      return {commands:[],success:false,error:message,protocol:this.state.protocol};
+      return {
+        ...result,
+        protocol: 'v2',
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error);
+
+      // Command polling failure must not override a healthy v3 heartbeat/telemetry state.
+      this.state.lastError = message;
+
+      return {
+        commands: [],
+        success: false,
+        error: message,
+        protocol: this.state.protocol,
+      };
     }
   }
-  private async executeApprovedCommand(command:any){
-    const type=String(command?.type??'');
 
-    if(type==='ping-agent'){
-      return {success:true,result:{pong:true,hostname:os.hostname(),timestamp:new Date().toISOString()}};
-    }
-
-    if(type==='send-telemetry'){
-      const result=await this.sendTelemetry();
-      return {success:Boolean((result as any)?.success),result};
-    }
-
-    if(type==='run-diagnostics'){
-      try{
-        const r=await fetch('http://localhost:4000/api/remote-diagnostics/telemetry',{signal:AbortSignal.timeout(15000)});
-        const t=await r.text();
-        return r.ok?{success:true,result:t?JSON.parse(t):{}}:{success:false,error:`Diagnostics ${r.status}: ${t}`};
-      }catch(e){
-        return {success:false,error:e instanceof Error?e.message:String(e)};
-      }
-    }
-
-    if(type==='flush-dns'||type==='renew-ip'){
-      const endpoint=type==='flush-dns'?'flush-dns':'renew-ip';
-      try{
-        const r=await fetch(`http://localhost:4000/api/remote-actions/${endpoint}`,{
-          method:'POST',
-          headers:{'content-type':'application/json'},
-          body:'{}',
-          signal:AbortSignal.timeout(20000),
-        });
-        const t=await r.text();
-        return r.ok?{success:true,result:t?JSON.parse(t):{}}:{success:false,error:`${type} ${r.status}: ${t}`};
-      }catch(e){
-        return {success:false,error:e instanceof Error?e.message:String(e)};
-      }
-    }
-
-    return {success:false,error:`Unsupported command: ${type}`};
-  }
-
-  private async reportCommandResult(settings:CloudSettings,commandId:string,outcome:any){
-    try{
-      await this.request(settings,`/api/v3/commands/${encodeURIComponent(commandId)}/result`,{
-        method:'POST',
-        body:JSON.stringify({
-          success:Boolean(outcome?.success),
-          result:outcome?.result??{},
-          error:outcome?.success?null:String(outcome?.error??'Command failed'),
-        }),
-      });
-    }catch{}
-  }
   private async request(
     settings: CloudSettings,
     path: string,
@@ -807,5 +762,4 @@ export class CloudAgentService implements OnModuleInit, OnModuleDestroy {
     this.commandTimer.unref();
   }
 }
-
 

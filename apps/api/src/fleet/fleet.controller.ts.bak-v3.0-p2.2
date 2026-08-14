@@ -98,13 +98,4 @@ export class FleetController {
       ),
     );
   }
-  @Get('commands/history')
-  commandsHistory(@Query('deviceId') deviceId?:string):Promise<unknown>{
-    return this.f.commandsHistory(deviceId);
-  }
-
-  @Post('commands')
-  queueCommand(@Body() body:any):Promise<unknown>{
-    return this.f.queueCommand(String(body.deviceId??''),String(body.type??''));
-  }
 }

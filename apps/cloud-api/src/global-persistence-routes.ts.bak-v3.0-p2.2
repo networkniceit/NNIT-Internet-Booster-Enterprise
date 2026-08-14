@@ -356,35 +356,4 @@ export function installGlobalPersistenceRoutes(app:Express){
       res.status(500).json({message:e instanceof Error?e.message:String(e)});
     }
   });
-  app.get('/api/v3/commands/history',async(req,res)=>{
-    try{
-      await initGlobalSchema();
-      const db=getPool()!;
-      const deviceId=req.query.deviceId?String(req.query.deviceId):'';
-      const limit=Math.max(1,Math.min(200,Number(req.query.limit??50)));
-      const params:any[]=[];
-      let where='';
-      if(deviceId){params.push(deviceId);where='WHERE c.device_id=$1';}
-      params.push(limit);
-      const lp='$'+params.length;
-      const q=await db.query(
-        `SELECT c.id,c.device_id AS "deviceId",d.name AS "deviceName",
-                c.type,c.payload,c.status,
-                c.queued_at AS "queuedAt",
-                c.delivered_at AS "deliveredAt",
-                c.completed_at AS "completedAt",
-                c.result,c.error
-         FROM nnit_commands c
-         LEFT JOIN nnit_devices d ON d.id=c.device_id
-         ${where}
-         ORDER BY c.queued_at DESC
-         LIMIT ${lp}`,
-        params,
-      );
-      res.json({commands:q.rows});
-    }catch(e){
-      res.status(500).json({message:e instanceof Error?e.message:String(e)});
-    }
-  });
 }
-
