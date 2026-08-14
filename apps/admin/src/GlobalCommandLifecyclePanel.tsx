@@ -19,7 +19,7 @@ export function GlobalCommandLifecyclePanel(){
 
  async function load(){
   try{
-   const d=await fetch(`${API}/api/fleet/devices`,{cache:'no-store'});
+   const d=await fetch(`${API}/api/fleet/v3/devices`,{cache:'no-store'});
    if(d.ok){
     const x=await d.json();
     const list=Array.isArray(x?.devices)?x.devices:[];
@@ -113,3 +113,4 @@ export function GlobalCommandLifecyclePanel(){
   <p className="action-message">{msg}</p>
  </section>
 }
+

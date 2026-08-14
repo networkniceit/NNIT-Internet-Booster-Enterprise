@@ -217,12 +217,37 @@ export function installGlobalPersistenceRoutes(app:Express){
         [org],
       );
       const fleet=await db.query(
-        `SELECT id,name,platform,agent_version AS "agentVersion",country,city,
-                (last_seen_at>=NOW()-INTERVAL '90 seconds') AS online,
-                last_seen_at AS "lastSeenAt"
-         FROM nnit_devices
-         WHERE organization_id=$1
-         ORDER BY last_seen_at DESC NULLS LAST
+        `SELECT
+           d.id,
+           d.name,
+           d.platform,
+           d.agent_version AS "agentVersion",
+           d.country,
+           d.city,
+           (d.last_seen_at>=NOW()-INTERVAL '90 seconds') AS online,
+           d.last_seen_at AS "lastSeenAt",
+           t.score,
+           t.latency_ms AS "latencyMs",
+           t.dns_ms AS "dnsMs",
+           t.jitter_ms AS "jitterMs",
+           t.packet_loss AS "packetLoss",
+           t.cpu_percent AS "cpuPercent",
+           t.memory_percent AS "memoryPercent",
+           t.free_memory_gb AS "freeMemoryGb",
+           t.disk_free_gb AS "diskFreeGb",
+           t.download_mbps AS "downloadMbps",
+           t.upload_mbps AS "uploadMbps",
+           t.created_at AS "telemetryAt"
+         FROM nnit_devices d
+         LEFT JOIN LATERAL (
+           SELECT *
+           FROM nnit_telemetry
+           WHERE device_id=d.id
+           ORDER BY created_at DESC
+           LIMIT 1
+         ) t ON TRUE
+         WHERE d.organization_id=$1
+         ORDER BY d.last_seen_at DESC NULLS LAST
          LIMIT 200`,
         [org],
       );
@@ -387,4 +412,5 @@ export function installGlobalPersistenceRoutes(app:Express){
     }
   });
 }
+
 

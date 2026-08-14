@@ -541,4 +541,21 @@ export class FleetService {
       body:JSON.stringify({deviceId,type,payload:{}}),
     });
   }
+  async v3FleetDashboard(){
+    const data:any=await this.req('/api/v3/dashboard');
+    const fleet=Array.isArray(data?.fleet)?data.fleet:[];
+    const devices=fleet.map((d:any)=>({
+      id:String(d?.id??''),name:String(d?.name??'unnamed-device'),platform:String(d?.platform??'unknown'),
+      agentVersion:String(d?.agentVersion??'3.x'),country:d?.country??null,city:d?.city??null,
+      online:Boolean(d?.online),lastSeenAt:d?.lastSeenAt??null,score:d?.score??null,
+      latency:d?.latencyMs??d?.latency??null,dns:d?.dnsMs??d?.dns??null,jitter:d?.jitterMs??d?.jitter??null,
+      loss:d?.packetLoss??d?.loss??null,cpuPercent:d?.cpuPercent??null,memoryPercent:d?.memoryPercent??null,protocol:'v3'
+    }));
+    return {...data,devices,total:Number(data?.devices?.total??devices.length),online:Number(data?.devices?.online??devices.filter((d:any)=>d.online).length),offline:Number(data?.devices?.offline??devices.filter((d:any)=>!d.online).length),alerts:Number(data?.incidents?.active??0),critical:Number(data?.incidents?.critical??0),protocol:'v3'};
+  }
+
+  async v3FleetDevices(){
+    const d:any=await this.v3FleetDashboard();
+    return {devices:d.devices??[],total:d.total??0,online:d.online??0,offline:d.offline??0,alerts:d.alerts??0,critical:d.critical??0,protocol:'v3'};
+  }
 }

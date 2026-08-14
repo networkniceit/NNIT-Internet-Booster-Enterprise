@@ -107,4 +107,9 @@ export class FleetController {
   queueCommand(@Body() body:any):Promise<unknown>{
     return this.f.queueCommand(String(body.deviceId??''),String(body.type??''));
   }
+  @Get('v3/dashboard')
+  v3Dashboard():Promise<unknown>{return this.f.v3FleetDashboard()}
+
+  @Get('v3/devices')
+  v3Devices():Promise<unknown>{return this.f.v3FleetDevices()}
 }

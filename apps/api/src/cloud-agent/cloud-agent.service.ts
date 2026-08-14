@@ -225,9 +225,8 @@ export class CloudAgentService implements OnModuleInit, OnModuleDestroy {
               method: 'POST',
               body:
                 JSON.stringify({
-                  deviceId:
-                    settings.deviceId ||
-                    undefined,
+                  deviceId: settings.deviceId || undefined,
+                  id: settings.deviceId || undefined,
                   organizationId:
                     settings.organizationId ||
                     undefined,
@@ -260,12 +259,9 @@ export class CloudAgentService implements OnModuleInit, OnModuleDestroy {
             },
           );
 
-        const deviceId =
-          String(
-            result?.device?.id ??
-            result?.id ??
-            '',
-          );
+        const returnedDeviceId = String(result?.device?.id ?? result?.id ?? '');
+
+        const deviceId = settings.deviceId || returnedDeviceId;
 
         if (!deviceId) {
           throw new Error(
@@ -479,41 +475,112 @@ export class CloudAgentService implements OnModuleInit, OnModuleDestroy {
         reason:
           'Cloud agent is disabled or not registered.',
       };
-    }
+    }    const total = os.totalmem();
+    const free = os.freemem();
 
-    const total =
-      os.totalmem();
+    let measurement:any = {};
+    let traffic:any = {};
+    let pressure:any = {};
+    let diagnostics:any = {};
 
-    const free =
-      os.freemem();
+    try {
+      const r = await fetch(
+        'http://localhost:4000/api/measurement/live',
+        { signal: AbortSignal.timeout(5000) },
+      );
+      if (r.ok) measurement = await r.json();
+    } catch {}
+
+    try {
+      const r = await fetch(
+        'http://localhost:4000/api/traffic/live',
+        { signal: AbortSignal.timeout(5000) },
+      );
+      if (r.ok) traffic = await r.json();
+    } catch {}
+
+    try {
+      const r = await fetch(
+        'http://localhost:4000/api/resource-pressure/status',
+        { signal: AbortSignal.timeout(5000) },
+      );
+      if (r.ok) pressure = await r.json();
+    } catch {}
+
+    try {
+      const r = await fetch(
+        'http://localhost:4000/api/remote-diagnostics/telemetry',
+        { signal: AbortSignal.timeout(8000) },
+      );
+      if (r.ok) diagnostics = await r.json();
+    } catch {}
 
     const payload = {
-      cpuPercent: null,
+      score:
+        measurement.unifiedScore ??
+        measurement.score ??
+        null,
+
+      latencyMs:
+        measurement.internetTcpLatency ??
+        measurement.latency ??
+        null,
+
+      dnsMs:
+        measurement.dnsLatency ??
+        measurement.dns ??
+        null,
+
+      jitterMs:
+        measurement.relayUdpJitter ??
+        measurement.jitter ??
+        null,
+
+      packetLoss:
+        measurement.relayPacketLoss ??
+        measurement.packetLoss ??
+        0,
+
+      cpuPercent:
+        pressure.cpuPercent ??
+        pressure.cpu ??
+        diagnostics.cpuPercent ??
+        diagnostics.cpu ??
+        null,
+
       memoryPercent:
-        total > 0
-          ? Number(
-              (
-                ((total - free) /
-                  total) *
-                100
-              ).toFixed(1),
-            )
-          : null,
-      freeMemoryGb:
-        Number(
-          (
-            free /
-            1024 /
-            1024 /
-            1024
-          ).toFixed(2),
+        pressure.memoryPercent ??
+        pressure.memory ??
+        diagnostics.memoryPercent ??
+        diagnostics.memory ??
+        (
+          total > 0
+            ? Number((((total - free) / total) * 100).toFixed(1))
+            : null
         ),
-      hostname:
-        os.hostname(),
-      platform:
-        process.platform,
-      timestamp:
-        new Date().toISOString(),
+
+      freeMemoryGb:
+        pressure.freeMemoryGb ??
+        diagnostics.freeMemoryGb ??
+        Number((free / 1024 / 1024 / 1024).toFixed(2)),
+
+      diskFreeGb:
+        diagnostics.diskFreeGb ??
+        diagnostics.diskFree ??
+        null,
+
+      downloadMbps:
+        traffic.downloadMbps ??
+        null,
+
+      uploadMbps:
+        traffic.uploadMbps ??
+        null,
+
+      hostname: os.hostname(),
+      deviceName: settings.deviceName || os.hostname(),
+      platform: process.platform,
+      timestamp: new Date().toISOString(),
     };
 
     const primaryPath =
@@ -807,5 +874,7 @@ export class CloudAgentService implements OnModuleInit, OnModuleDestroy {
     this.commandTimer.unref();
   }
 }
+
+
 
 

@@ -338,7 +338,7 @@ function App() {
         <FleetPanel />        <RemoteDiagnosticsPanel />
 
         <ResourcePressurePanel />        <RemoteActionsPanel />        <FleetAlertsPanel />        <ResourceOptimizerPanel />
-        <GlobalCommandLifecyclePanel />`r`n`r`n        <section className="card system-card">
+        <GlobalCommandLifecyclePanel />        <section className="card system-card">
           <div>
             <p className="section-label">SYSTEM</p>
             <h2>{status?.computer.hostname ?? 'Unknown computer'}</h2>
@@ -373,6 +373,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
