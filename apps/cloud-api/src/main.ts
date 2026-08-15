@@ -30,6 +30,9 @@ app.use('/api',(req,res,next)=>{
   next();
 });
 
+installGlobalPersistenceRoutes(app);
+installAlertLifecycleRoutes(app);
+
 app.get('/api/summary',(_req,res)=>{
   res.json({
     devices:devices.size,
@@ -124,6 +127,9 @@ app.post('/api/commands/:id/result',(req,res)=>{
 
 const port=Number(process.env.PORT??8080);
 app.listen(port,'0.0.0.0',()=>console.log(`NNIT Cloud API listening on ${port}`));
+
+
+
 
 
 
